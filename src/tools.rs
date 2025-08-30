@@ -55,8 +55,11 @@ pub fn new_rand_vec(size: usize) -> Vec<f64> {
 }
 
 pub fn cartesian_products(n: usize) -> Vec<Vec<u8>> {
+    if n >= usize::BITS as usize {
+        panic!("n shouldn't be greater than {} (architecture dependent)", usize::BITS);
+    }
     let mut result = Vec::new();
-    for i in 0..(1 << n) {
+    for i in 0..(1usize << n) {
         let mut v = Vec::with_capacity(n);
         for j in (0..n).rev() {
             v.push(((i >> j) & 1) as u8);
