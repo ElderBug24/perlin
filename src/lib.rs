@@ -6,19 +6,20 @@ use num::Num;
 
 
 pub struct PerlinNoiseMap {
-    vector_map: HashMap<Vec<isize>, Vec<f64>>
+    vector_map: Cache<Vec<isize>, Vec<f64>>,
+    // cartesian_products_cache: Cache<usize, Vec<Vec<u8>>, fn(Vec<isize>) -> Vec<f64>>
 }
 
 impl PerlinNoiseMap {
     pub fn new() -> Self {
         return Self{
-            vector_map: HashMap::new()
+            vector_map: Cache::new(|vec: Vec<isize>| -> Vec<f64> { new_rand_vec(reduce_vec::<isize>(vec).len()) })
         };
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
         return Self {
-            vector_map: HashMap::with_capacity(capacity)
+            vector_map: Cache::with_capacity(|vec: Vec<isize>| -> Vec<f64> { new_rand_vec(reduce_vec::<isize>(vec).len()) }, capacity)
         };
     }
 
@@ -27,10 +28,9 @@ impl PerlinNoiseMap {
     }
 
     pub fn get_vector(&mut self, pos: &Vec<isize>) -> &Vec<f64> {
-        let rpos = reduce_vec::<isize>(pos.clone());
         return {
             let mut rng = rand::rng();
-            let v = self.vector_map.entry(rpos).or_insert_with(|| new_rand_vec(pos.len()));
+            let v = self.vector_map.get(pos.clone());
 
             if v.len() < pos.len() {
                 while v.len() < pos.len() {
@@ -54,31 +54,33 @@ impl PerlinNoiseMap {
             v
         };
 
-        todo!();
+        0f64
+        // todo!();
     }
 }
 
-pub struct Cache<K: Eq + Hash + Clone, V, F> where F: Fn(K) -> V {
+#[derive(Debug)]
+struct Cache<K: Eq + Hash + Clone, V> {
     map: HashMap<K, V>,
-    func: F
+    func: fn(K) -> V
 }
 
-impl<K: Eq + Hash + Clone, V, F> Cache<K, V, F> where F: Fn(K) -> V {
-    pub fn new(func: F) -> Self {
-        return Self{
+impl<K: Eq + Hash + Clone, V> Cache<K, V> {
+    fn new(func: fn(K) -> V) -> Self {
+        return Self {
             map: HashMap::new(),
             func: func
         };
     }
 
-    pub fn with_capacity(func: F, capacity: usize) -> Self {
+    fn with_capacity(func: fn(K) -> V, size: usize) -> Self {
         return Self {
-            map: HashMap::with_capacity(capacity),
+            map: HashMap::with_capacity(size),
             func: func
         };
     }
 
-    pub fn get(&mut self, key: K) -> &mut V {
+    fn get(&mut self, key: K) -> &mut V {
         return self.map.entry(key.clone()).or_insert_with(|| (self.func)(key));
     }
 }
