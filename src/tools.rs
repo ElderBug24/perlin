@@ -6,43 +6,43 @@ use num::Num;
 
 
 #[derive(Debug)]
-pub struct Cache<K: Eq + Hash + Clone, V> {
+pub struct Cache<K: Eq + Hash + Clone, V, A> {
     cache: HashMap<K, V>,
-    func: fn(K) -> V
+    func: fn(K, A) -> V
 }
 
-impl<K: Eq + Hash + Clone, V> Cache<K, V> {
-    pub fn new(func: fn(K) -> V) -> Self {
+impl<K: Eq + Hash + Clone, V, A> Cache<K, V, A> {
+    pub fn new(func: fn(K, A) -> V) -> Self {
         return Self {
             cache: HashMap::new(),
             func: func
         };
     }
 
-    pub fn with_capacity(func: fn(K) -> V, capacity: usize) -> Self {
+    pub fn with_capacity(func: fn(K, A) -> V, capacity: usize) -> Self {
         return Self {
             cache: HashMap::with_capacity(capacity),
             func: func
         };
     }
 
-    pub fn get(&mut self, key: K) -> &mut V {
-        return self.cache.entry(key.clone()).or_insert_with(|| (self.func)(key));
+    pub fn get(&mut self, key: K, args: A) -> &mut V {
+        return self.cache.entry(key.clone()).or_insert_with(|| (self.func)(key, args));
     }
 }
 
 #[derive(Debug)]
-pub struct CacheFixedSize<K: Eq + Hash + Clone, V> {
-    size: usize,
+pub struct CacheFixedCapacity<K: Eq + Hash + Clone, V> {
+    capacity: usize,
     cache: HashMap<K, V>,
     func: fn(K) -> V
 }
 
-impl<K: Eq + Hash + Clone, V> CacheFixedSize<K, V> {
-    pub fn new(size: usize, func: fn(K) -> V) -> Self {
+impl<K: Eq + Hash + Clone, V> CacheFixedCapacity<K, V> {
+    pub fn new(func: fn(K) -> V, capacity: usize) -> Self {
         return Self {
-            size: size,
-            cache: HashMap::with_capacity(size),
+            capacity: capacity,
+            cache: HashMap::with_capacity(capacity),
             func: func
         };
     }
@@ -51,7 +51,7 @@ impl<K: Eq + Hash + Clone, V> CacheFixedSize<K, V> {
         if self.cache.contains_key(&key) {
             return self.cache.get_mut(&key).unwrap();
         } else {
-            if self.cache.len() == self.size {
+            if self.cache.len() == self.capacity {
                 self.cache.remove(&self.cache.keys().next().unwrap().clone());
             }
 
@@ -72,11 +72,11 @@ pub fn reduce_vec<N: Num + PartialOrd + Copy + std::fmt::Debug>(mut vec: Vec<N>)
     return vec;
 }
 
-pub fn new_rand_vec(size: usize) -> Vec<f64> {
+pub fn new_rand_vec(capacity: usize) -> Vec<f64> {
     let mut rng = rand::rng();
-    let mut vec: Vec<f64> = Vec::with_capacity(size);
+    let mut vec: Vec<f64> = Vec::with_capacity(capacity);
 
-    for _ in 0..size {
+    for _ in 0..capacity {
         vec.push(rng.random_range(-1.0..1.0));
     }
 
