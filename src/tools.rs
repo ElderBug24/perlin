@@ -7,27 +7,27 @@ use num::Num;
 
 #[derive(Debug)]
 pub struct Cache<K: Eq + Hash + Clone, V> {
-    map: HashMap<K, V>,
+    cache: HashMap<K, V>,
     func: fn(K) -> V
 }
 
 impl<K: Eq + Hash + Clone, V> Cache<K, V> {
     pub fn new(func: fn(K) -> V) -> Self {
         return Self {
-            map: HashMap::new(),
+            cache: HashMap::new(),
             func: func
         };
     }
 
     pub fn with_capacity(func: fn(K) -> V, capacity: usize) -> Self {
         return Self {
-            map: HashMap::with_capacity(capacity),
+            cache: HashMap::with_capacity(capacity),
             func: func
         };
     }
 
     pub fn get(&mut self, key: K) -> &mut V {
-        return self.map.entry(key.clone()).or_insert_with(|| (self.func)(key));
+        return self.cache.entry(key.clone()).or_insert_with(|| (self.func)(key));
     }
 }
 
@@ -55,9 +55,7 @@ pub fn new_rand_vec(size: usize) -> Vec<f64> {
 }
 
 pub fn cartesian_products(n: usize) -> Vec<Vec<u8>> {
-    if n >= usize::BITS as usize {
-        panic!("n shouldn't be greater than {} (architecture dependent)", usize::BITS);
-    }
+    assert!(n < usize::BITS as usize);
     let mut result = Vec::new();
     for i in 0..(1usize << n) {
         let mut v = Vec::with_capacity(n);
