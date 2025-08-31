@@ -2,6 +2,8 @@ pub mod tools;
 
 pub use crate::tools::*;
 
+use std::cmp::max;
+
 use rand::Rng;
 
 
@@ -15,6 +17,9 @@ pub fn default_layers(depth: u32, falloff: f64) -> Vec<[f64; 2]> {
         .collect::<Vec<[f64; 2]>>();
 }
 
+const PERLIN_NOISE_MAP_VECTOR_MAP_FUNC: fn(Vec<isize>, usize) -> Vec<f64> = |_vec: Vec<isize>, len: usize| -> Vec<f64> { new_rand_vec(len) };
+const PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC: fn(usize, ()) -> Vec<Vec<u8>> = |n: usize, _| -> Vec<Vec<u8>> { cartesian_products(n) };
+
 pub struct PerlinNoiseMap {
     vector_map: Cache<Vec<isize>, Vec<f64>, usize>,
     cartesian_products_cache: Cache<usize, Vec<Vec<u8>>, ()>
@@ -23,15 +28,15 @@ pub struct PerlinNoiseMap {
 impl PerlinNoiseMap {
     pub fn new() -> Self {
         return Self {
-            vector_map: Cache::new(|vec: Vec<isize>, len: usize| -> Vec<f64> { new_rand_vec(len) }),
-            cartesian_products_cache: Cache::new(|n: usize, _| -> Vec<Vec<u8>> { cartesian_products(n) })
+            vector_map: Cache::new(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC),
+            cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC)
         };
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
         return Self {
-            vector_map: Cache::with_capacity(|vec: Vec<isize>, len: usize| -> Vec<f64> { new_rand_vec(len) }, capacity),
-            cartesian_products_cache: Cache::new(|n: usize, _| -> Vec<Vec<u8>> { cartesian_products(n) })
+            vector_map: Cache::with_capacity(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC, capacity),
+            cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC)
         };
     }
 
@@ -45,10 +50,8 @@ impl PerlinNoiseMap {
         let reduced_pos = reduce_vec::<isize>(pos.clone());
         let v = self.vector_map.get(reduced_pos, pos.len());
 
-        if v.len() < pos.len() {
-            while v.len() < pos.len() {
-                v.push(rng.random_range(-1.0..1.0));
-            }
+        for _ in 0..(max(pos.len() - v.len(), 0)) {
+            v.push(rng.random_range(-1.0..1.0));
         }
 
         return &*v;
@@ -59,9 +62,6 @@ impl PerlinNoiseMap {
 
         let cpos: Vec<isize> = pos
             .iter()
-            // .map(|n| *n as isize)
-            // .map(|n| if *n < 0.0 { (*n as isize -1) as isize } else { *n as isize })
-            // .map(|n| *n as isize - (*n < 0.0) as isize)
             .map(|n| n.floor() as isize)
             .collect();
 
@@ -102,12 +102,12 @@ impl PerlinNoiseMap {
                     .sum())
             .collect();
 
-        let rpos: Vec<f64> = rpos
+        let fpos: Vec<f64> = rpos
             .iter()
             .map(|n| fade(*n))
             .collect();
 
-        let result = flat_nd_lerp(&rpos, &corners, &values);
+        let result = flat_nd_lerp(&fpos, &corners, &values);
 
         return result;
     }
