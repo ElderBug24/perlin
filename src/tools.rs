@@ -31,6 +31,35 @@ impl<K: Eq + Hash + Clone, V> Cache<K, V> {
     }
 }
 
+#[derive(Debug)]
+pub struct CacheFixedSize<K: Eq + Hash + Clone, V> {
+    size: usize,
+    cache: HashMap<K, V>,
+    func: fn(K) -> V
+}
+
+impl<K: Eq + Hash + Clone, V> CacheFixedSize<K, V> {
+    pub fn new(size: usize, func: fn(K) -> V) -> Self {
+        return Self {
+            size: size,
+            cache: HashMap::with_capacity(size),
+            func: func
+        };
+    }
+
+    pub fn get(&mut self, key: K) -> &mut V {
+        if self.cache.contains_key(&key) {
+            return self.cache.get_mut(&key).unwrap();
+        } else {
+            if self.cache.len() == self.size {
+                self.cache.remove(&self.cache.keys().next().unwrap().clone());
+            }
+
+            return self.cache.entry(key.clone()).or_insert_with(|| (self.func)(key));
+        }
+    }
+}
+
 pub fn reduce_vec<N: Num + PartialOrd + Copy + std::fmt::Debug>(mut vec: Vec<N>) -> Vec<N> {
     for i in (0..vec.len()).rev() {
         if vec[i] == N::zero() {

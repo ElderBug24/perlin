@@ -1,18 +1,22 @@
 use perlin::*;
+use crate::tools::*;
 
 
 fn main() {
-    let mut perlin_noise_map = PerlinNoiseMap::new();
-    
-    // perlinNoiseMap.get(&vec![0, 0]);
-    perlin_noise_map.get(&vec![1.2, 1.0]);
+    let mut c = CacheFixedSize::new(3, |k| 2*k);
+    println!("{:?}", c);
 
-    perlin_noise_map.show();
-
-    // println!("{:?}", v);
-
-    // let vec: Vec<f64> = new_rand_vec(7);
-    //
-    // println!("{:#?}", vec);
+    c.get(1);
+    println!("{:?}", c);
+    c.get(2);
+    println!("{:?}", c);
+    c.get(3);
+    println!("{:?}", c);
+    c.get(4);
+    println!("{:?}", c);
+    c.get(5);
+    println!("{:?}", c);
+    c.get(6);
+    println!("{:?}", c);
 }
 
