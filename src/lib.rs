@@ -46,19 +46,60 @@ impl PerlinNoiseMap {
 
     pub fn get(&mut self, pos: &Vec<f64>) -> f64 {
         let pos = reduce_vec::<f64>(pos.clone());
-        let rpos = pos.iter().map(|n| *n % 1.0).collect::<Vec<f64>>();
-        let cpos: Vec<usize> = {
-            let mut v: Vec<usize> = Vec::with_capacity(pos.len());
 
-            for c in pos {
-                v.push(c as usize);
-            }
+        let cpos: Vec<isize> = pos
+            .iter()
+            .map(|n| *n as isize)
+            .collect();
 
-            v
-        };
+        let rpos: Vec<f64> = pos
+            .iter()
+            .zip(&cpos)
+            .map(|(a, b)| *a - *b as f64)
+            .collect();
 
-        0f64
-        // todo!();
+        let corners = self.cartesian_products_cache.get(cpos.len());
+
+        let values: Vec<Vec<f64>> = corners
+            .iter()
+            .map(|p| self.vector_map.get(p
+                    .iter()
+                    .zip(&cpos)
+                    .map(|(a, b)| *a as isize + *b)
+                    .collect()).clone())
+            .collect();
+
+        let pos_: Vec<Vec<f64>> = corners
+            .iter()
+            .map(|p| p
+                    .iter()
+                    .zip(&rpos)
+                    .map(|(a, b)| *a as f64 - *b)
+                    .collect())
+            .collect();
+
+        let values: Vec<f64> = values
+            .iter()
+            .zip(&pos_)
+            .map(|(a, b)| a
+                    .iter()
+                    .zip(b)
+                    .map(|(a, b)| *a * *b)
+                    .sum())
+            .collect();
+
+        let rpos: Vec<f64> = rpos
+            .iter()
+            .map(|n| fade(*n))
+            .collect();
+
+        let result = flat_nd_lerp(&rpos, &corners, &values);
+
+        return result;
     }
+}
+
+fn fade(t: f64) -> f64 {
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
