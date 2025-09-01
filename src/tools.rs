@@ -85,14 +85,14 @@ pub fn new_rand_vec(capacity: usize) -> Vec<f64> {
 
 pub fn cartesian_products(n: usize) -> Vec<Vec<u8>> {
     assert!(n < usize::BITS as usize);
-    let mut result = Vec::new();
-    for i in 0..(1usize << n) {
-        let mut v = Vec::with_capacity(n);
-        for j in (0..n).rev() {
-            v.push(((i >> j) & 1) as u8);
-        }
-        result.push(v);
-    }
+    let result: Vec<Vec<u8>> = (0..(1usize << n))
+        .map(|i| {
+            (0..n)
+                .rev()
+                .map(|j| ((i >> j) & 1) as u8)
+                .collect::<Vec<u8>>()})
+        .collect();
+
     return result;
 }
 
@@ -109,10 +109,10 @@ pub fn flat_nd_lerp(pos: &Vec<f64>, corners: &Vec<Vec<u8>>, values: &Vec<f64>) -
         })
         .collect();
 
-    weights
+    return weights
         .iter()
         .zip(values.iter())
         .map(|(w, v)| w * v)
-        .sum()
+        .sum();
 }
 

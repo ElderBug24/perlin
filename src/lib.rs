@@ -58,7 +58,7 @@ impl PerlinNoiseMap {
     }
 
     pub fn get(&mut self, pos: &Vec<f64>) -> f64 {
-        let len = pos.len();
+        let corners = self.cartesian_products_cache.get(pos.len(), ()).clone();
 
         let cpos: Vec<isize> = pos
             .iter()
@@ -71,35 +71,36 @@ impl PerlinNoiseMap {
             .map(|(n, rn)| *n - *rn as f64)
             .collect();
 
-        let corners = self.cartesian_products_cache.get(len, ()).clone();
-
         let values: Vec<Vec<f64>> = corners
             .iter()
-            .map(|p| self.get_vector(&p
-                    .iter()
-                    .zip(&cpos)
-                    .map(|(p, cp)| *p as isize + *cp as isize)
-                    .collect::<Vec<isize>>())
-                .clone())
+            .map(|p| {
+                self.get_vector(&p
+                        .iter()
+                        .zip(&cpos)
+                        .map(|(p, cp)| *p as isize + *cp as isize)
+                        .collect::<Vec<isize>>())
+                    .clone()})
             .collect();
 
         let pos_: Vec<Vec<f64>> = corners
             .iter()
-            .map(|p| p
+            .map(|p| {
+                p
                     .iter()
                     .zip(&rpos)
                     .map(|(p, rp)| *p as f64 - *rp)
-                    .collect())
+                    .collect()})
             .collect();
 
         let values: Vec<f64> = values
             .iter()
             .zip(&pos_)
-            .map(|(v, p)| v
+            .map(|(v, p)| {
+                v
                     .iter()
                     .zip(p)
                     .map(|(v, p)| *v * *p)
-                    .sum())
+                    .sum()})
             .collect();
 
         let fpos: Vec<f64> = rpos
@@ -158,11 +159,12 @@ impl NoiseMap {
         let result = self.perlin_noise_maps
             .iter_mut()
             .zip(&self.layers)
-            .map(|(map, layer)| map.get(&pos
-                    .iter()
-                    .map(|n| *n * layer[0])
-                    .collect())
-                * layer[1])
+            .map(|(map, layer)| {
+                map.get(&pos
+                        .iter()
+                        .map(|n| *n * layer[0])
+                        .collect())
+                    * layer[1]})
             .sum::<f64>();
 
         return result / self.total_coeff;
