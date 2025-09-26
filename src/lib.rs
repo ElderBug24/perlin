@@ -72,52 +72,39 @@ impl PerlinNoiseMap {
     pub fn get(&mut self, pos: &Vec<f64>) -> f64 {
         let corners = self.cartesian_products_cache.get(pos.len(), ()).clone();
 
-        let cpos: Vec<isize> = pos
-            .iter()
-            .map(|n| n.floor() as isize)
-            .collect();
+        let mut cpos: Vec<isize> = Vec::with_capacity(pos.len());
+        let mut rpos: Vec<f64> = Vec::with_capacity(pos.len());
+        let mut fpos: Vec<f64> = Vec::with_capacity(pos.len());
 
-        let rpos: Vec<f64> = pos
-            .into_iter()
-            .zip(&cpos)
-            .map(|(n, rn)| *n - *rn as f64)
-            .collect();
-
-        let values: Vec<Vec<f64>> = corners
+        pos
             .iter()
-            .map(|p| {
-                self.get_vector(&p
-                        .iter()
-                        .zip(&cpos)
-                        .map(|(p, cp)| *p as isize + *cp as isize)
-                        .collect::<Vec<isize>>())
-                    .clone()})
-            .collect();
+            .for_each(|&n| {
+                let c = n.floor() as isize;
+                let r = n - c as f64;
 
-        let pos_: Vec<Vec<f64>> = corners
+                cpos.push(c);
+                rpos.push(r);
+                fpos.push(fade(r));
+            });
+
+        let values: Vec<f64> = corners
             .iter()
-            .map(|p| {
-                p
+            .map(|c| {
+                let v = self.get_vector(&c
+                    .iter()
+                    .zip(&cpos)
+                    .map(|(&c, &cp)| c as isize + cp as isize)
+                    .collect::<Vec<isize>>())
+                .clone();
+                c
                     .iter()
                     .zip(&rpos)
-                    .map(|(p, rp)| *p as f64 - *rp)
-                    .collect()})
-            .collect();
-
-        let values: Vec<f64> = values
-            .into_iter()
-            .zip(&pos_)
-            .map(|(v, p)| {
-                v
-                    .iter()
-                    .zip(p)
-                    .map(|(v, p)| *v * *p)
-                    .sum()})
-            .collect();
-
-        let fpos: Vec<f64> = rpos
-            .into_iter()
-            .map(|n| fade(n))
+                    .zip(v)
+                    .map(|((&c, &rp), v)| {
+                        (c as f64 - rp) * v
+                    })
+                    .sum()
+            })
             .collect();
 
         let result = flat_nd_lerp(&fpos, &corners, &values);
@@ -174,7 +161,7 @@ impl NoiseMap {
             .map(|(map, layer)| {
                 map.get(&pos
                         .iter()
-                        .map(|n| *n * layer[0])
+                        .map(|&n| n * layer[0])
                         .collect())
                     * layer[1]})
             .sum::<f64>();
