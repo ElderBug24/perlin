@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use image::{Luma, ImageBuffer};
 
 use perlin::*;
@@ -14,6 +16,8 @@ fn main() {
 
     let mut img = ImageBuffer::new(WIDTH, HEIGHT);
 
+    let start = Instant::now();
+
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
             let (x_, y_) = (x as f64, y as f64);
@@ -28,5 +32,7 @@ fn main() {
     img.save("output.png").expect("Failed to save image");
 
     // noise_map.show();
+
+    println!("{:?}", start.elapsed());
 }
 

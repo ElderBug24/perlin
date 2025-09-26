@@ -29,6 +29,14 @@ impl<K: Eq + Hash + Clone, V, A> Cache<K, V, A> {
     pub fn get(&mut self, key: K, args: A) -> &mut V {
         return self.cache.entry(key.clone()).or_insert_with(|| (self.func)(key, args));
     }
+
+    pub fn remove(&mut self, key: K) -> Option<V> {
+        return self.cache.remove(&key);
+    }
+
+    pub fn clear(&mut self) {
+        self.cache.clear();
+    }
 }
 
 #[derive(Debug)]
@@ -97,22 +105,16 @@ pub fn cartesian_products(n: usize) -> Vec<Vec<u8>> {
 }
 
 pub fn flat_nd_lerp(pos: &Vec<f64>, corners: &Vec<Vec<u8>>, values: &Vec<f64>) -> f64 {
-    let one_minus_pos: Vec<f64> = pos.iter().map(|&x| 1.0 - x).collect();
-    let weights: Vec<f64> = corners
+    return corners
         .iter()
-        .map(|corner| {
+        .zip(values)
+        .map(|(corner, v)| {
             corner
                 .iter()
                 .enumerate()
-                .map(|(i, &c)| if c == 1 { pos[i] } else { one_minus_pos[i] })
-                .product::<f64>()
+                .map(|(i, &c)| if c == 1 { pos[i] } else { 1.0 - pos[i] })
+                .product::<f64>() * v
         })
-        .collect();
-
-    return weights
-        .iter()
-        .zip(values.iter())
-        .map(|(w, v)| w * v)
         .sum();
 }
 

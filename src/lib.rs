@@ -57,6 +57,18 @@ impl PerlinNoiseMap {
         return &*v;
     }
 
+    pub fn get_vector_map(&mut self) -> &Cache<Vec<isize>, Vec<f64>, usize> {
+        return &self.vector_map;
+    }
+
+    pub fn clear_vector_map(&mut self) {
+        self.vector_map.clear();
+    }
+
+    pub fn remove_from_vector_map(&mut self, pos: Vec<isize>) -> Option<Vec<f64>> {
+        return self.vector_map.remove(pos);
+    }
+
     pub fn get(&mut self, pos: &Vec<f64>) -> f64 {
         let corners = self.cartesian_products_cache.get(pos.len(), ()).clone();
 
@@ -66,7 +78,7 @@ impl PerlinNoiseMap {
             .collect();
 
         let rpos: Vec<f64> = pos
-            .iter()
+            .into_iter()
             .zip(&cpos)
             .map(|(n, rn)| *n - *rn as f64)
             .collect();
@@ -93,7 +105,7 @@ impl PerlinNoiseMap {
             .collect();
 
         let values: Vec<f64> = values
-            .iter()
+            .into_iter()
             .zip(&pos_)
             .map(|(v, p)| {
                 v
@@ -104,8 +116,8 @@ impl PerlinNoiseMap {
             .collect();
 
         let fpos: Vec<f64> = rpos
-            .iter()
-            .map(|n| fade(*n))
+            .into_iter()
+            .map(|n| fade(n))
             .collect();
 
         let result = flat_nd_lerp(&fpos, &corners, &values);
@@ -175,5 +187,32 @@ impl NoiseMap {
             perlin_noise_map.show();
         }
     }
+}
+
+fn render_memory_efficient(layers: Vec<[f64; 2]>, ranges: Vec<[f64; 3]>) -> Vec<Vec<f64>> {
+    let mut noise_map = NoiseMap::new(layers);
+
+    // pop ranges and generate iter for last dim so it gets used in the first iteration // other way around
+    // let iter;
+    // for range in ranges.into_iter().rev() {
+    // }
+
+    // return (y..ymax)
+    //     .map(|y| {
+    //         let y_ = y as f64 * ystep;
+    //         let r = (x..xmax)
+    //             .map(|x| {
+    //                 let x_ = x as f64 * xstep;
+    //                 noise_map.get(vec![x_, y_])})
+    //             .collect::<Vec<f64>>();
+    //         (x..xmax)
+    //             .map(|x| {
+    //                 noise_map.remove(vec![x.floor() - 1, y.floor() - 1])
+    //             })
+    //         return r;
+    //         })
+    //     .collect::<Vec<Vec<f64>>>();
+
+    todo!();
 }
 
