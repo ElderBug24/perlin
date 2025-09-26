@@ -9,7 +9,7 @@ const WIDTH: u32 = 512;
 const HEIGHT: u32 = 512;
 
 // const R: f64 = 2f64.sqrt() / 2.0;
-const R: f64 = 1.0;
+const R: f64 = 0.8;
 
 fn main() {
     let mut noise_map = NoiseMap::new(default_layers(4, 0.5));
@@ -28,7 +28,6 @@ fn main() {
             img.put_pixel(x, y, Luma([value]));
         }
     }
-
     img.save("output.png").expect("Failed to save image");
 
     // noise_map.show();

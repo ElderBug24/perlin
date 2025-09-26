@@ -38,7 +38,8 @@ fn test_nmap(n: u32) {
     let mut rng = rand::rng();
     let mut nm = NoiseMap::new(default_layers(n, 0.5));
 
-    let mut vec: Vec<f64> = (0..N)
+    let mut vec: Vec<f64> = Vec::with_capacity(N as usize);
+    vec = (0..N)
         .map(|_| nm.get(&vec![rng.random::<f64>() * N as f64 / 10.0, rng.random::<f64>() * N as f64 / 10.0]))
         .collect();
 
