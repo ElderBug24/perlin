@@ -1,12 +1,12 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use image::{Luma, ImageBuffer};
 
 use perlin::*;
 
 
-const WIDTH: u32 = 512;
-const HEIGHT: u32 = 512;
+const WIDTH: u32 = 1024;
+const HEIGHT: u32 = 1024;
 
 // const R: f64 = 2f64.sqrt() / 2.0;
 const R: f64 = 0.8;

@@ -103,7 +103,7 @@ impl PerlinNoiseMap {
                     .zip(&rpos)
                     .zip(value)
                     .map(|(((i, &c), &rp), v)| {
-                        product *= if c == 1.0 { fpos[i] } else { 1.0 - fpos[i] };
+                        product *= (1.0 - c - fpos[i]).abs();
                         (c as f64 - rp) * v
                     })
                     .sum::<f64>() * product
@@ -177,8 +177,8 @@ impl NoiseMap {
     }
 }
 
-fn render_memory_efficient(layers: Vec<[f64; 2]>, ranges: Vec<[f64; 3]>) -> Vec<Vec<f64>> {
-    let mut noise_map = NoiseMap::new(layers);
+fn _render_memory_efficient(_layers: Vec<[f64; 2]>, _ranges: Vec<[f64; 3]>) -> Vec<Vec<f64>> {
+    // let mut noise_map = NoiseMap::new(layers);
 
     // pop ranges and generate iter for last dim so it gets used in the first iteration // other way around
     // let iter;
