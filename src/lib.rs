@@ -45,7 +45,7 @@ impl PerlinNoiseMap {
         println!("{:#?}", self.cartesian_products_cache);
     }
 
-    pub fn get_vector(&mut self, pos: &Vec<isize>) -> &Vec<f64> {
+    pub fn get_vector(&mut self, pos: &Vec<isize>) -> &[f64] {
         let mut rng = rand::rng();
         let reduced_pos = reduce_vec::<isize>(&pos);
         let v = self.vector_map.get(reduced_pos, pos.len());
@@ -54,7 +54,7 @@ impl PerlinNoiseMap {
             v.push(rng.random_range(-1.0..1.0));
         }
 
-        return &*v;
+        return &v[0..pos.len()];
     }
 
     pub fn get_vector_map(&mut self) -> &VectorCache<isize, Vec<f64>, usize> {
@@ -69,16 +69,18 @@ impl PerlinNoiseMap {
         return self.vector_map.remove(pos);
     }
 
-    pub fn get(&mut self, pos: &Vec<f64>) -> f64 {
+    pub fn get(&mut self, pos: &Vec<f64>, scale: f64) -> f64 {
         let corners = self.cartesian_products_cache.get(pos.len(), ()).clone();
 
         let mut cpos: Vec<isize> = Vec::with_capacity(pos.len());
         let mut rpos: Vec<f64> = Vec::with_capacity(pos.len());
         let mut fpos: Vec<f64> = Vec::with_capacity(pos.len());
+        let mut vpos: Vec<isize> = Vec::with_capacity(pos.len());
 
         pos
             .iter()
             .for_each(|&n| {
+                let n = n * scale;
                 let c = n.floor() as isize;
                 let r = n - c as f64;
 
@@ -90,11 +92,12 @@ impl PerlinNoiseMap {
         let result = corners
             .iter()
             .map(|c| {
-                let vector = self.get_vector(&c
+                vpos.clear();
+                c
                     .iter()
                     .zip(&cpos)
-                    .map(|(&c, &cp)| c as isize + cp as isize)
-                    .collect::<Vec<isize>>());
+                    .for_each(|(&c, &cp)| vpos.push(c as isize + cp as isize));
+                let vector = self.get_vector(&vpos);
 
                 let mut product = 1.0;
                 c
@@ -159,12 +162,7 @@ impl NoiseMap {
         let result = self.perlin_noise_maps
             .iter_mut()
             .zip(&self.layers)
-            .map(|(map, layer)| {
-                map.get(&pos
-                        .iter()
-                        .map(|&n| n * layer[0])
-                        .collect())
-                    * layer[1]})
+            .map(|(noise_map, layer)| noise_map.get(&pos, layer[0]) * layer[1])
             .sum::<f64>();
 
         return result / self.total_coeff;
