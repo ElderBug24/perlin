@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use rand::Rng;
-use num::Num;
+use num::{Num, FromPrimitive};
 
 
 #[derive(Debug)]
@@ -91,14 +91,14 @@ pub fn new_rand_vec(capacity: usize) -> Vec<f64> {
     return vec;
 }
 
-pub fn cartesian_products(n: usize) -> Vec<Vec<u8>> {
-    assert!(n < usize::BITS as usize);
-    let result: Vec<Vec<u8>> = (0..(1usize << n))
+pub fn cartesian_products<T: Num + FromPrimitive>(n: usize) -> Vec<Vec<T>> {
+    // assert!(n < usize::BITS as usize);
+    let result: Vec<Vec<T>> = (0..(1usize << n))
         .map(|i| {
             (0..n)
                 .rev()
-                .map(|j| ((i >> j) & 1) as u8)
-                .collect::<Vec<u8>>()})
+                .map(|j| T::from_usize((i >> j) & 1).unwrap())
+                .collect()})
         .collect();
 
     return result;

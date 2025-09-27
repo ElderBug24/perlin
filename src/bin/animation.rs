@@ -1,14 +1,13 @@
 use perlin::*;
 
-use std::time::{Duration, Instant};
-use std::thread::sleep;
+// use std::time::{Duration, Instant};
+// use std::thread::sleep;
 
-use image::{Luma, ImageBuffer};
 use macroquad::prelude::*;
 
 const WINDOW_WIDTH: i32 = 1280;
 const WINDOW_HEIGHT: i32 = 960;
-const TARGET_FPS: f32 = 60.0;
+// const TARGET_FPS: f32 = 165.0;
 
 const TIME_STEP: f64 = 0.01;
 const RES_X: u32 = 100;
@@ -42,13 +41,13 @@ const TEXT_COLOR: Color = PINK;
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let frame_duration = Duration::from_secs_f32(1.0 / TARGET_FPS);
+    // let frame_duration = Duration::from_secs_f32(1.0 / TARGET_FPS);
     let mut time = 0.0;
 
     let mut noise_map = NoiseMap::new(default_layers(2, 0.5));
 
     loop {
-        let frame_start = Instant::now();
+        // let frame_start = Instant::now();
 
         let mut pixels = Vec::with_capacity((RES_X * RES_Y) as usize);
         for y in 0..RES_Y {
@@ -79,9 +78,10 @@ async fn main() {
 
         next_frame().await;
 
-        let elapsed = frame_start.elapsed();
-        if elapsed < frame_duration {
-            sleep(frame_duration - elapsed);
-        }}
+        // let elapsed = frame_start.elapsed();
+        // if elapsed < frame_duration {
+        //     sleep(frame_duration - elapsed);
+        // }
+    }
 }
 

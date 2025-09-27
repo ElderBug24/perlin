@@ -18,11 +18,11 @@ pub fn default_layers(depth: u32, falloff: f64) -> Vec<[f64; 2]> {
 }
 
 const PERLIN_NOISE_MAP_VECTOR_MAP_FUNC: fn(Vec<isize>, usize) -> Vec<f64> = |_vec: Vec<isize>, len: usize| -> Vec<f64> { new_rand_vec(len) };
-const PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC: fn(usize, ()) -> Vec<Vec<u8>> = |n: usize, _| -> Vec<Vec<u8>> { cartesian_products(n) };
+const PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC: fn(usize, ()) -> Vec<Vec<f64>> = |n: usize, _| -> Vec<Vec<f64>> { cartesian_products::<f64>(n) };
 
 pub struct PerlinNoiseMap {
     vector_map: Cache<Vec<isize>, Vec<f64>, usize>,
-    cartesian_products_cache: Cache<usize, Vec<Vec<u8>>, ()>
+    cartesian_products_cache: Cache<usize, Vec<Vec<f64>>, ()>
 }
 
 impl PerlinNoiseMap {
@@ -87,27 +87,28 @@ impl PerlinNoiseMap {
                 fpos.push(fade(r));
             });
 
-        let values: Vec<f64> = corners
+        let result = corners
             .iter()
             .map(|c| {
-                let v = self.get_vector(&c
+                let value = self.get_vector(&c
                     .iter()
                     .zip(&cpos)
                     .map(|(&c, &cp)| c as isize + cp as isize)
-                    .collect::<Vec<isize>>())
-                .clone();
+                    .collect::<Vec<isize>>());
+
+                let mut product = 1.0;
                 c
                     .iter()
+                    .enumerate()
                     .zip(&rpos)
-                    .zip(v)
-                    .map(|((&c, &rp), v)| {
+                    .zip(value)
+                    .map(|(((i, &c), &rp), v)| {
+                        product *= if c == 1.0 { fpos[i] } else { 1.0 - fpos[i] };
                         (c as f64 - rp) * v
                     })
-                    .sum()
+                    .sum::<f64>() * product
             })
-            .collect();
-
-        let result = flat_nd_lerp(&fpos, &corners, &values);
+            .sum();
 
         return result;
     }
