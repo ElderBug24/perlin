@@ -6,6 +6,46 @@ use num::{Num, FromPrimitive};
 
 
 #[derive(Debug)]
+pub struct VectorCache<K, V, A> {
+    cache: HashMap<Vec<K>, V>,
+    func: fn(Vec<K>, A) -> V
+}
+
+impl<K: Eq + Hash + Clone, V, A> VectorCache<K, V, A> {
+    pub fn new(func: fn(Vec<K>, A) -> V) -> Self {
+        return Self {
+            cache: HashMap::new(),
+            func: func
+        };
+    }
+
+    pub fn with_capacity(func: fn(Vec<K>, A) -> V, capacity: usize) -> Self {
+        return Self {
+            cache: HashMap::with_capacity(capacity),
+            func: func
+        };
+    }
+
+    pub fn get(&mut self, key: &[K], args: A) -> &mut V {
+        if self.cache.contains_key(key) {
+            return self.cache.get_mut(key).unwrap();
+        }
+
+        self.cache.insert(key.to_vec(), (self.func)(key.to_vec(), args));
+
+        return self.cache.get_mut(key).unwrap();
+    }
+
+    pub fn remove(&mut self, key: &[K]) -> Option<V> {
+        return self.cache.remove(key);
+    }
+
+    pub fn clear(&mut self) {
+        self.cache.clear();
+    }
+}
+
+#[derive(Debug)]
 pub struct Cache<K: Eq + Hash + Clone, V, A> {
     cache: HashMap<K, V>,
     func: fn(K, A) -> V
@@ -27,7 +67,13 @@ impl<K: Eq + Hash + Clone, V, A> Cache<K, V, A> {
     }
 
     pub fn get(&mut self, key: K, args: A) -> &mut V {
-        return self.cache.entry(key.clone()).or_insert_with(|| (self.func)(key, args));
+        if self.cache.contains_key(&key) {
+            return self.cache.get_mut(&key).unwrap();
+        }
+
+        self.cache.insert(key.clone(), (self.func)(key.clone(), args));
+
+        return self.cache.get_mut(&key).unwrap();
     }
 
     pub fn remove(&mut self, key: K) -> Option<V> {
@@ -68,16 +114,17 @@ impl<K: Eq + Hash + Clone, V> CacheFixedCapacity<K, V> {
     }
 }
 
-pub fn reduce_vec<N: Num + PartialOrd + Copy + std::fmt::Debug>(mut vec: Vec<N>) -> Vec<N> {
+pub fn reduce_vec<'a, N: Num + PartialOrd + Copy + std::fmt::Debug>(vec: &'a Vec<N>) -> &'a [N] {
+    let mut index = vec.len();
     for i in (0..vec.len()).rev() {
         if vec[i] == N::zero() {
-            vec.pop();
+            index -= 1;
         } else {
             break;
         }
     }
 
-    return vec;
+    return &vec[0..index];
 }
 
 pub fn new_rand_vec(capacity: usize) -> Vec<f64> {

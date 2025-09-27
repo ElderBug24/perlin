@@ -21,21 +21,21 @@ const PERLIN_NOISE_MAP_VECTOR_MAP_FUNC: fn(Vec<isize>, usize) -> Vec<f64> = |_ve
 const PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC: fn(usize, ()) -> Vec<Vec<f64>> = |n: usize, _| -> Vec<Vec<f64>> { cartesian_products::<f64>(n) };
 
 pub struct PerlinNoiseMap {
-    vector_map: Cache<Vec<isize>, Vec<f64>, usize>,
+    vector_map: VectorCache<isize, Vec<f64>, usize>,
     cartesian_products_cache: Cache<usize, Vec<Vec<f64>>, ()>
 }
 
 impl PerlinNoiseMap {
     pub fn new() -> Self {
         return Self {
-            vector_map: Cache::new(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC),
+            vector_map: VectorCache::new(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC),
             cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC)
         };
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
         return Self {
-            vector_map: Cache::with_capacity(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC, capacity),
+            vector_map: VectorCache::with_capacity(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC, capacity),
             cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC)
         };
     }
@@ -47,7 +47,7 @@ impl PerlinNoiseMap {
 
     pub fn get_vector(&mut self, pos: &Vec<isize>) -> &Vec<f64> {
         let mut rng = rand::rng();
-        let reduced_pos = reduce_vec::<isize>(pos.clone());
+        let reduced_pos = reduce_vec::<isize>(&pos);
         let v = self.vector_map.get(reduced_pos, pos.len());
 
         for _ in 0..(max(pos.len() - v.len(), 0)) {
@@ -57,7 +57,7 @@ impl PerlinNoiseMap {
         return &*v;
     }
 
-    pub fn get_vector_map(&mut self) -> &Cache<Vec<isize>, Vec<f64>, usize> {
+    pub fn get_vector_map(&mut self) -> &VectorCache<isize, Vec<f64>, usize> {
         return &self.vector_map;
     }
 
@@ -65,7 +65,7 @@ impl PerlinNoiseMap {
         self.vector_map.clear();
     }
 
-    pub fn remove_from_vector_map(&mut self, pos: Vec<isize>) -> Option<Vec<f64>> {
+    pub fn remove_from_vector_map(&mut self, pos: &Vec<isize>) -> Option<Vec<f64>> {
         return self.vector_map.remove(pos);
     }
 
@@ -90,7 +90,7 @@ impl PerlinNoiseMap {
         let result = corners
             .iter()
             .map(|c| {
-                let value = self.get_vector(&c
+                let vector = self.get_vector(&c
                     .iter()
                     .zip(&cpos)
                     .map(|(&c, &cp)| c as isize + cp as isize)
@@ -101,7 +101,7 @@ impl PerlinNoiseMap {
                     .iter()
                     .enumerate()
                     .zip(&rpos)
-                    .zip(value)
+                    .zip(vector)
                     .map(|(((i, &c), &rp), v)| {
                         product *= (1.0 - c - fpos[i]).abs();
                         (c as f64 - rp) * v
