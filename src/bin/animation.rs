@@ -4,14 +4,17 @@ use perlin::*;
 // use std::thread::sleep;
 
 use macroquad::prelude::*;
+use colors_transform;
+use colors_transform::Color as _Color;
 
 const WINDOW_WIDTH: i32 = 1280;
 const WINDOW_HEIGHT: i32 = 960;
 // const TARGET_FPS: f32 = 165.0;
 
 const TIME_STEP: f64 = 0.01;
-const RES_X: u32 = 100;
-const RES_Y: u32 = 100;
+const RES_X: u32 = 86;
+const RES_Y: u32 = 86;
+const SCALE: f64 = 20.0;
 
 const R: f64 = 0.5;
 
@@ -52,10 +55,11 @@ async fn main() {
         let mut pixels = Vec::with_capacity((RES_X * RES_Y) as usize);
         for y in 0..RES_Y {
             for x in 0..RES_X {
-                let x = x as f64 / 10.0;
-                let y = y as f64 / 10.0;
-                let l = ((noise_map.get(&vec![x, y, time]) + R) / R / 2.0 * 256.0) as u8;
-                pixels.extend_from_slice(&[l, l, l, 255]);
+                let x = x as f64 / SCALE;
+                let y = y as f64 / SCALE;
+                let l = ((noise_map.get(&vec![x, y, time]) + R) / R / 2.0 * 360.0) as f32;
+                let (r, g, b) = colors_transform::Hsl::from(l, 64.0, 60.0).to_rgb().as_tuple();
+                pixels.extend_from_slice(&[r as u8, g as u8, b as u8, 255]);
             }
         }
 
