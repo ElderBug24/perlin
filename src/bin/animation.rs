@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use perlin::*;
 
 // use std::time::{Duration, Instant};
@@ -12,9 +14,10 @@ const WINDOW_HEIGHT: i32 = 960;
 // const TARGET_FPS: f32 = 165.0;
 
 const TIME_STEP: f64 = 0.01;
-const RES_X: u32 = 86;
-const RES_Y: u32 = 86;
+const RES_X: u32 = 64;
+const RES_Y: u32 = 64;
 const SCALE: f64 = 20.0;
+const MOUSE_MVMT_SCALE: f64 = 0.001;
 
 const R: f64 = 0.5;
 
@@ -57,7 +60,9 @@ async fn main() {
             for x in 0..RES_X {
                 let x = x as f64 / SCALE;
                 let y = y as f64 / SCALE;
-                let l = ((noise_map.get(&vec![x, y, time]) + R) / R / 2.0 * 360.0) as f32;
+                let (mx, my) = mouse_position();
+                let (mx, my) = (mx as f64 * MOUSE_MVMT_SCALE, my as f64 * MOUSE_MVMT_SCALE);
+                let l = ((noise_map.get(&vec![x, y, time, mx, my]) + R) / R / 2.0 * 360.0) as f32;
                 let (r, g, b) = colors_transform::Hsl::from(l, 64.0, 60.0).to_rgb().as_tuple();
                 pixels.extend_from_slice(&[r as u8, g as u8, b as u8, 255]);
             }
