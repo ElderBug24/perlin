@@ -151,7 +151,7 @@ pub fn cartesian_products<T: Num + FromPrimitive>(n: usize) -> Vec<Vec<T>> {
     return result;
 }
 
-pub fn flat_nd_lerp(pos: &Vec<f64>, corners: &Vec<Vec<u8>>, values: &Vec<f64>) -> f64 {
+pub fn flat_nd_lerp(pos: &Vec<f64>, corners: &Vec<Vec<f64>>, values: &Vec<f64>) -> f64 {
     return corners
         .iter()
         .zip(values)
@@ -159,7 +159,7 @@ pub fn flat_nd_lerp(pos: &Vec<f64>, corners: &Vec<Vec<u8>>, values: &Vec<f64>) -
             corner
                 .iter()
                 .enumerate()
-                .map(|(i, &c)| if c == 1 { pos[i] } else { 1.0 - pos[i] })
+                .map(|(i, &c)| (1.0 - c - pos[i]).abs())
                 .product::<f64>() * v
         })
         .sum();
