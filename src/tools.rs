@@ -115,16 +115,13 @@ impl<K: Eq + Hash + Clone, V> CacheFixedCapacity<K, V> {
 }
 
 pub fn reduce_vec<'a, N: Num + PartialOrd + Copy + std::fmt::Debug>(vec: &'a Vec<N>) -> &'a [N] {
-    let mut index = vec.len();
     for i in (0..vec.len()).rev() {
-        if vec[i] == N::zero() {
-            index -= 1;
-        } else {
-            break;
+        if vec[i] != N::zero() {
+            return &vec[0..i+1];
         }
     }
 
-    return &vec[0..index];
+    return &vec[0..1];
 }
 
 pub fn new_rand_vec(capacity: usize) -> Vec<f64> {

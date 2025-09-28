@@ -21,22 +21,31 @@ const PERLIN_NOISE_MAP_VECTOR_MAP_FUNC: fn(Vec<isize>, usize) -> Vec<f64> = |_ve
 const PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC: fn(usize, ()) -> Vec<Vec<f64>> = |n: usize, _| -> Vec<Vec<f64>> { cartesian_products::<f64>(n) };
 
 pub struct PerlinNoiseMap {
+    scale: f64,
     vector_map: VectorCache<isize, Vec<f64>, usize>,
-    cartesian_products_cache: Cache<usize, Vec<Vec<f64>>, ()>
+    cartesian_products_cache: Cache<usize, Vec<Vec<f64>>, ()>,
+
+    cpos: Vec<isize>
 }
 
 impl PerlinNoiseMap {
-    pub fn new() -> Self {
+    pub fn new(scale: f64) -> Self {
         return Self {
+            scale: scale,
             vector_map: VectorCache::new(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC),
-            cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC)
+            cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC),
+
+            cpos: Vec::new()
         };
     }
 
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(scale: f64, capacity: usize) -> Self {
         return Self {
+            scale: scale,
             vector_map: VectorCache::with_capacity(PERLIN_NOISE_MAP_VECTOR_MAP_FUNC, capacity),
-            cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC)
+            cartesian_products_cache: Cache::new(PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC),
+
+            cpos: Vec::new()
         };
     }
 
@@ -69,10 +78,12 @@ impl PerlinNoiseMap {
         return self.vector_map.remove(pos);
     }
 
-    pub fn get(&mut self, pos: &Vec<f64>, scale: f64) -> f64 {
+    pub fn get(&mut self, pos: &Vec<f64>) -> f64 {
         let corners = self.cartesian_products_cache.get(pos.len(), ()).clone();
 
-        let mut cpos: Vec<isize> = Vec::with_capacity(pos.len());
+        self.cpos.clear();
+        self.cpos.reserve_exact(pos.len());
+
         let mut rpos: Vec<f64> = Vec::with_capacity(pos.len());
         let mut fpos: Vec<f64> = Vec::with_capacity(pos.len());
         let mut vpos: Vec<isize> = Vec::with_capacity(pos.len());
@@ -80,11 +91,11 @@ impl PerlinNoiseMap {
         pos
             .iter()
             .for_each(|&n| {
-                let n = n * scale;
+                let n = n * self.scale;
                 let c = n.floor() as isize;
                 let r = n - c as f64;
 
-                cpos.push(c);
+                self.cpos.push(c);
                 rpos.push(r);
                 fpos.push(fade(r));
             });
@@ -95,7 +106,7 @@ impl PerlinNoiseMap {
                 vpos.clear();
                 c
                     .iter()
-                    .zip(&cpos)
+                    .zip(&self.cpos)
                     .for_each(|(&c, &cp)| vpos.push(c as isize + cp as isize));
                 let vector = self.get_vector(&vpos);
 
@@ -125,8 +136,9 @@ pub struct NoiseMap {
 
 impl NoiseMap {
     pub fn new(layers: Vec<[f64; 2]>) -> Self {
-        let perlin_noise_maps: Vec<PerlinNoiseMap> = (0..layers.len())
-            .map(|_| PerlinNoiseMap::new())
+        let perlin_noise_maps: Vec<PerlinNoiseMap> = layers
+            .iter()
+            .map(|layer| PerlinNoiseMap::new(layer[0]))
             .collect();
 
         let total_coeff = layers
@@ -142,8 +154,9 @@ impl NoiseMap {
     }
 
     pub fn with_capacity(layers: Vec<[f64; 2]>, capacity: usize) -> Self {
-        let perlin_noise_maps: Vec<PerlinNoiseMap> = (0..layers.len())
-            .map(|_| PerlinNoiseMap::with_capacity(capacity))
+        let perlin_noise_maps: Vec<PerlinNoiseMap> = layers
+            .iter()
+            .map(|layer| PerlinNoiseMap::with_capacity(layer[0], capacity))
             .collect();
 
         let total_coeff = layers
@@ -162,7 +175,7 @@ impl NoiseMap {
         let result = self.perlin_noise_maps
             .iter_mut()
             .zip(&self.layers)
-            .map(|(noise_map, layer)| noise_map.get(&pos, layer[0]) * layer[1])
+            .map(|(noise_map, layer)| noise_map.get(&pos) * layer[1])
             .sum::<f64>();
 
         return result / self.total_coeff;
