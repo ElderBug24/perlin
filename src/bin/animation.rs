@@ -52,23 +52,31 @@ async fn main() {
 
     let mut noise_map = NoiseMap::new(default_layers(2, 0.5));
 
+    let mut image = Image {
+            bytes: vec![0u8; 4 * RES_X as usize * RES_Y as usize],
+            width: RES_X as u16,
+            height: RES_Y as u16,
+        };
+    let mut texture = Texture2D::from_image(&image);
+    // texture.set_filter(FilterMode::Nearest);
+
     loop {
         // let frame_start = Instant::now();
 
-        let mut pixels = Vec::with_capacity((RES_X * RES_Y) as usize);
-        for y in 0..RES_Y {
-            for x in 0..RES_X {
-                let x = x as f64 / SCALE;
-                let y = y as f64 / SCALE;
+        for y_ in 0..RES_Y {
+            for x_ in 0..RES_X {
+                let x = x_ as f64 / SCALE;
+                let y = y_ as f64 / SCALE;
                 let (mx, my) = mouse_position();
                 let (mx, my) = (mx as f64 * MOUSE_MVMT_SCALE, my as f64 * MOUSE_MVMT_SCALE);
                 let l = ((noise_map.get(&vec![x, y, time, mx, my]) + R) / R / 2.0 * 360.0) as f32;
                 let (r, g, b) = colors_transform::Hsl::from(l, 64.0, 60.0).to_rgb().as_tuple();
-                pixels.extend_from_slice(&[r as u8, g as u8, b as u8, 255]);
+                let index = 4 * (y_ as usize * RES_X as usize + x_ as usize);
+                image.bytes[index..index+4].copy_from_slice(&[r as u8, g as u8, b as u8, 255]);
             }
         }
 
-        let texture = Texture2D::from_rgba8(RES_X as u16, RES_Y as u16, &pixels);
+        texture.update(&image);
 
         draw_texture_ex(
             &texture,
