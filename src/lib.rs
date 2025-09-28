@@ -17,8 +17,8 @@ pub fn default_layers(depth: u32, falloff: f64) -> Vec<[f64; 2]> {
         .collect::<Vec<[f64; 2]>>();
 }
 
-const PERLIN_NOISE_MAP_VECTOR_MAP_FUNC: fn(Vec<isize>, usize) -> Vec<f64> = |_vec: Vec<isize>, len: usize| -> Vec<f64> { new_rand_vec(len) };
-const PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC: fn(usize, ()) -> Vec<Vec<f64>> = |n: usize, _| -> Vec<Vec<f64>> { cartesian_products::<f64>(n) };
+const PERLIN_NOISE_MAP_VECTOR_MAP_FUNC: fn(Vec<isize>, usize) -> Vec<f64> = |_vec: Vec<isize>, len: usize| { new_rand_vec(len) };
+const PERLIN_NOISE_MAP_CARTESIAN_PRODUCTS_FUNC: fn(usize, ()) -> Vec<Vec<f64>> = |n: usize, _| { cartesian_products::<f64>(n) };
 
 pub struct PerlinNoiseMap {
     scale: f64,
@@ -92,10 +92,10 @@ impl PerlinNoiseMap {
             .iter()
             .for_each(|&n| {
                 let n = n * self.scale;
-                let c = n.floor() as isize;
-                let r = n - c as f64;
+                let c = n.floor();
+                let r = n - c;
 
-                self.cpos.push(c);
+                self.cpos.push(c as isize);
                 rpos.push(r);
                 fpos.push(fade(r));
             });
@@ -107,7 +107,7 @@ impl PerlinNoiseMap {
                 c
                     .iter()
                     .zip(&self.cpos)
-                    .for_each(|(&c, &cp)| vpos.push(c as isize + cp as isize));
+                    .for_each(|(&c, &cp)| vpos.push(c as isize + cp));
                 let vector = self.get_vector(&vpos);
 
                 let mut product = 1.0;
@@ -118,7 +118,7 @@ impl PerlinNoiseMap {
                     .zip(vector)
                     .map(|(((i, &c), &rp), v)| {
                         product *= (1.0 - c - fpos[i]).abs();
-                        (c as f64 - rp) * v
+                        (c - rp) * v
                     })
                     .sum::<f64>() * product
             })
