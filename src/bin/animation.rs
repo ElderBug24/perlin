@@ -58,7 +58,7 @@ async fn main() {
             height: RES_Y as u16,
         };
     let mut texture = Texture2D::from_image(&image);
-    // texture.set_filter(FilterMode::Nearest);
+    texture.set_filter(FilterMode::Linear);
 
     loop {
         // let frame_start = Instant::now();
