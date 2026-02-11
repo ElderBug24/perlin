@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use rand::Rng;
-use num::{Num, FromPrimitive};
+use num_traits::{Num, FromPrimitive};
 
 
 #[derive(Debug)]

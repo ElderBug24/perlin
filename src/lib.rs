@@ -5,16 +5,17 @@ pub use crate::tools::*;
 use std::cmp::max;
 
 use rand::Rng;
+use num_traits::{Float, FromPrimitive};
 
 
-fn fade(t: f64) -> f64 {
+pub fn fade(t: f64) -> f64 {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
 pub fn default_layers(depth: u32, falloff: f64) -> Vec<[f64; 2]> {
     return (0..depth)
         .map(|n| [(1.0/falloff).powi(n as i32), falloff.powi(n as i32)])
-        .collect::<Vec<[f64; 2]>>();
+        .collect();
 }
 
 const PERLIN_NOISE_MAP_VECTOR_MAP_FUNC: fn(Vec<isize>, usize) -> Vec<f64> = |_vec: Vec<isize>, len: usize| { new_rand_vec(len) };
@@ -82,7 +83,7 @@ impl PerlinNoiseMap {
         let corners = self.cartesian_products_cache.get(pos.len(), ()).clone();
 
         self.cpos.clear();
-        self.cpos.reserve_exact(pos.len());
+        self.cpos.reserve(pos.len());
 
         let mut rpos: Vec<f64> = Vec::with_capacity(pos.len());
         let mut fpos: Vec<f64> = Vec::with_capacity(pos.len());
@@ -117,10 +118,10 @@ impl PerlinNoiseMap {
                     .zip(&rpos)
                     .zip(vector)
                     .map(|(((i, &c), &rp), v)| {
-                        product *= (1.0 - c - fpos[i]).abs();
+                        product *= (1.0 - c - fpos[i]);
                         (c - rp) * v
                     })
-                    .sum::<f64>() * product
+                    .sum::<f64>() * product.abs()
             })
             .sum();
 
@@ -213,5 +214,73 @@ fn _render_memory_efficient(_layers: Vec<[f64; 2]>, _ranges: Vec<[f64; 3]>) -> V
     //     .collect::<Vec<Vec<f64>>>();
 
     todo!();
+}
+
+// vectors: widt+1 * height+1 * 2
+// output: width*resx * height*resy
+pub fn render_arr_2d<T: Float+FromPrimitive+std::fmt::Display+std::fmt::Debug+std::ops::MulAssign+std::iter::Sum>(vectors: &[T], output: &mut [T], (width, height): (usize, usize), (resx, resy): (usize, usize), coeff: T) {
+    let zero = T::zero();
+    let one = T::one();
+    // let corners = [(zero, zero), (one, zero), (zero, one), (one, one)];
+    let corners = [[0, 0], [1, 0], [0, 1], [1, 1]];
+
+    let fade: fn(T) -> T = |t| t * t * t * (t * (t * T::from_u8(6).unwrap() - T::from_u8(15).unwrap()) + T::from_u8(10).unwrap());
+
+    for y in 0..(height * resy) {
+        for x in 0..(width * resx) {
+            let cx = x / resx;
+            let cy = y / resy;
+            // let rx = T::from_usize(x % resx).unwrap() / T::from_usize(resx).unwrap();
+            // let ry = T::from_usize(y % resy).unwrap() / T::from_usize(resy).unwrap();
+
+            let rx = T::from_usize(x-cx*resx).unwrap() / T::from_usize(resx).unwrap();
+            let ry = T::from_usize(y-cy*resy).unwrap() / T::from_usize(resy).unwrap();
+
+            // println!("(x: {:.2}, y: {:.2}): cx: {:.2}, cy: {:.2}, rx: {:.2}, ry: {:.2}", x, y, cx, cy, rx, ry);
+            // let temp = [(vectors[dbg!(cx+cy*(width+1))], [0, 0]), (vectors[dbg!(cx+1+cy*(width+1))], [1, 0]), (vectors[dbg!(cx+(cy+1)*(width+1))], [0, 1]), (vectors[dbg!(cx+1+(cy+1)*(width+1))], [1, 1])];
+            // let temp = [
+            //     ((vectors[(cx+cy*(width+1))*2], vectors[(cx+cy*(width+1))*2+1]), (zero, zero)),
+            //     ((vectors[(cx+1+cy*(width+1))*2], vectors[(cx+1+cy*(width+1))*2+1]), (one, zero)),
+            //     ((vectors[(cx+(cy+1)*(width+1))*2], vectors[(cx+(cy+1)*(width+1))*2+1]), (zero, one)),
+            //     ((vectors[(cx+1+(cy+1)*(width+1))*2], vectors[(cx+1+(cy+1)*(width+1))*2+1]), (one, one))
+            // ];
+            //
+            // let mut dots = [zero; 4];
+            // for i in 0..4 {
+            //     let ((vx, vy), (dx, dy)) = temp[i];
+            //
+            //     dots[i] = vx * (dx - rx) + vy * (dy - ry);
+            // }
+            //
+            // let rx = fade(rx);
+            // let ry = fade(ry);
+            //
+            // let br = (one - rx) * dots[0] + rx * dots[1];
+            // let tr = (one - rx) * dots[2] + rx * dots[3];
+            // let r = (one - ry) * br + ry * tr;
+
+            let cpos = [cx, cy];
+            let rpos = [rx, ry];
+            let fpos = [fade(rx), fade(ry)];
+
+            let r = corners
+                .iter()
+                .map(|c| {
+                    let vx = c[0] + cx; // coords
+                    let vy = c[1] + cy;
+                    let [vx, vy] = [vectors[(vx+vy*(width+1))*2], vectors[(vx+vy*(width+1))*2+1]];
+
+                    let cx = T::from_usize(c[0]).unwrap();
+                    let cy = T::from_usize(c[1]).unwrap();
+                     ((cx - rx) * vx
+                    + (cy - ry) * vy)
+                    * ((one - cx - fade(rx))
+                    *  (one - cy - fade(ry))).abs()
+                })
+                .sum::<T>();
+
+            output[x+y*width*resx] = r * coeff;
+        }
+    }
 }
 
