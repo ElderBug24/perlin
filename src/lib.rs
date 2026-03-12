@@ -85,20 +85,21 @@ impl PerlinNoiseMap {
         self.cpos.clear();
         self.cpos.reserve(pos.len());
 
-        let mut rpos: Vec<f64> = Vec::with_capacity(pos.len());
-        let mut fpos: Vec<f64> = Vec::with_capacity(pos.len());
+        let mut rfpos: Vec<f64> = vec![0.0; pos.len() * 2];
+        let (mut rpos, mut fpos) = rfpos.split_at_mut(pos.len());
         let mut vpos: Vec<isize> = Vec::with_capacity(pos.len());
 
         pos
             .iter()
-            .for_each(|&n| {
+            .enumerate()
+            .for_each(|(i, &n)| {
                 let n = n * self.scale;
                 let c = n.floor();
                 let r = n - c;
 
                 self.cpos.push(c as isize);
-                rpos.push(r);
-                fpos.push(fade(r));
+                rpos[i] = r;
+                fpos[i] = fade(r);
             });
 
         let result = corners
@@ -115,10 +116,10 @@ impl PerlinNoiseMap {
                 c
                     .iter()
                     .enumerate()
-                    .zip(&rpos)
+                    .zip(&*rpos)
                     .zip(vector)
-                    .map(|(((i, &c), &rp), v)| {
-                        product *= (1.0 - c - fpos[i]);
+                    .map(|(((i, &c), rp), v)| {
+                        product *= 1.0 - c - fpos[i];
                         (c - rp) * v
                     })
                     .sum::<f64>() * product.abs()
